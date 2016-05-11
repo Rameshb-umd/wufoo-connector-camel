@@ -5,7 +5,6 @@
 
   <groupId>edu.umd.lib</groupId>
   <artifactId>wufoo-connector-camel</artifactId>
-  <packaging>bundle</packaging>
   <version>0.1-SNAPSHOT</version>
 
   <name>Wufoo Connector - Camel Route</name>
@@ -13,9 +12,10 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <camel.version>2.15.1</camel.version>
+    <camel.version>2.17.0</camel.version>
     <slf4j.version>1.7.10</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
+    <spring.version>3.2.2.RELEASE</spring.version>
   </properties>
 
   <dependencies>
@@ -48,6 +48,71 @@
       <version>${camel.version}</version>
       <scope>test</scope>
     </dependency>
+    
+     <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-jetty</artifactId>
+      <version>${camel.version}</version>
+    <!-- use the same version as your Camel core version -->
+     </dependency>
+    
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20090211</version>
+	</dependency>
+	
+	<!-- Spring -->
+	<dependency>
+		<groupId>org.springframework</groupId>
+		<artifactId>spring-core</artifactId>
+		<version>${spring.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.springframework</groupId>
+		<artifactId>spring-beans</artifactId>
+		<version>${spring.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.springframework</groupId>
+		<artifactId>spring-aop</artifactId>
+		<version>${spring.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.springframework</groupId>
+		<artifactId>spring-test</artifactId>
+		<version>${spring.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.springframework</groupId>
+		<artifactId>spring-context-support</artifactId>
+		<version>${spring.version}</version>
+	</dependency>
+	
+	<dependency>
+		<groupId>org.apache.camel</groupId>
+		<artifactId>camel-spring</artifactId>
+		<version>${camel.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.apache.camel</groupId>
+		<artifactId>camel-http</artifactId>
+		<version>${camel.version}</version>
+	</dependency>
+	
+	<dependency>
+		<groupId>org.apache.camel</groupId>
+		<artifactId>camel-spring-javaconfig</artifactId>
+		<version>${camel.version}</version>
+	</dependency>
+	
+	<dependency>
+		<groupId>org.apache.httpcomponents</groupId>
+		<artifactId>httpclient</artifactId>
+		<version>4.0-beta1</version>
+	</dependency>
+	
+    
   </dependencies>
 
   <build>
@@ -63,6 +128,7 @@
           <target>1.7</target>
         </configuration>
       </plugin>
+     
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
@@ -72,37 +138,13 @@
         </configuration>
       </plugin>
 
-      <!-- to generate the MANIFEST-FILE of the bundle -->
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <version>2.3.7</version>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-           <id>bundle-manifest</id>
-           <phase>process-classes</phase>
-           <goals>
-               <goal>manifest</goal>
-           </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <instructions>
-            <Bundle-SymbolicName>wufoo-connector-camel-bundle</Bundle-SymbolicName>
-            <Private-Package>edu.umd.lib.*</Private-Package>
-            <Import-Package>*</Import-Package>
-          </instructions>
-        </configuration>
-      </plugin>
-
       <!-- Allows the example to be run via 'mvn compile exec:java' -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.2.1</version>
         <configuration>
-            <mainClass>edu.umd.lib.MainApp</mainClass>
+            <mainClass>edu.umd.lib.ServicesApp</mainClass>
             <includePluginDependencies>false</includePluginDependencies>
         </configuration>
       </plugin>
