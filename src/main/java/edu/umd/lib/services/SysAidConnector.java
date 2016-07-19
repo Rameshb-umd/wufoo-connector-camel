@@ -85,21 +85,20 @@ public class SysAidConnector {
 
   /***
    * Default Constructor, While creating an object the configuration for SysAid
-   * is loaded to the object and the field mapping configuration is also loaded.
-   * Using the credentials from the configuration settings user is validated. If
-   * validation fails custom exceptions is thrown since further connection with
-   * SysAid is not possible.
+   * is loaded to the object. Using the credentials from the configuration
+   * settings user is validated. If validation fails custom exceptions is thrown
+   * since further connection with SysAid is not possible.
    * <p>
    * After authenticating the user all the list from SysAid is populated so that
    * it can be used for further request
    *
    * @throws SysAidLoginException
    */
-  public SysAidConnector() throws SysAidLoginException {
-    this.loadConfiguration("configuration.properties");
-    this.wufooSysaidMapping("Wufoo-Sysaid-Mapping.properties");
+  public SysAidConnector(String environmentName) throws SysAidLoginException {
+    this.loadConfiguration(environmentName);
     this.authenticate();
     this.getAllList();
+
   }
 
   /***
@@ -113,10 +112,9 @@ public class SysAidConnector {
    *
    * @throws SysAidLoginException
    */
-  public SysAidConnector(String session_id) {
+  public SysAidConnector(String environmentName, String session_id) {
     this.session_id = session_id;
-    this.loadConfiguration("configuration.properties");
-    this.wufooSysaidMapping("Wufoo-Sysaid-Mapping.properties");
+    this.loadConfiguration(environmentName);
     this.getAllList();
   }
 
@@ -188,7 +186,7 @@ public class SysAidConnector {
       HttpEntity entity = response.getEntity();
       String responseString = EntityUtils.toString(entity, "UTF-8");
 
-      log.debug("Response" + responseString);
+      // log.info("Response>>" + responseString);
 
       JSONObject json_result = new JSONObject(responseString);
       if (json_result.has("status") && json_result.getString("status").equalsIgnoreCase("401")) {
@@ -254,11 +252,15 @@ public class SysAidConnector {
    *
    * @return ServiceRequest_ID
    */
-  public String createServiceRequest(HashMap<String, String> values) {
+  public String createServiceRequest(HashMap<String, String> values, String resourceName) {
 
+    this.wufooSysaidMapping(resourceName);
     try {
       JSONObject infoFields = new JSONObject();
-      infoFields.put("info", this.convertMaptoJSON(fieldMapping(values)));
+
+      HashMap<String, String> fieldMappings = fieldMapping(values);
+      JSONArray sysAidFields = this.convertMaptoJSON(fieldMappings);
+      infoFields.put("info", sysAidFields);
       HttpResponse response = this.postRequest(infoFields, this.sysaid_URL + "/sr");
       HttpEntity entity = response.getEntity();
       String responseString = EntityUtils.toString(entity, "UTF-8");
@@ -443,17 +445,18 @@ public class SysAidConnector {
    * @return
    */
   public HashMap<String, String> fieldMapping(HashMap<String, String> values) {
+
     HashMap<String, String> finalValues = new HashMap<String, String>();
 
-    // Finding mapping fields from configuration
+    // Finding mapping fields from WuFoo
     for (Map.Entry<String, ?> entry : values.entrySet()) {
 
       String wufoo_key = entry.getKey();// Field from WuFoo
       String value = (String) entry.getValue();// Value from WuFoo
 
-      if (configuration.containsKey(wufoo_key)) {
+      if (configuration.containsKey("field." + wufoo_key)) {
         // Check if there is mapping field in SysAid
-        String sysaid_field = configuration.get(wufoo_key);
+        String sysaid_field = configuration.get("field." + wufoo_key);
         // Get the mapping field from SysAid
 
         if (dropdownList.containsKey(sysaid_field)) {
@@ -473,6 +476,7 @@ public class SysAidConnector {
       }
 
     }
+
     return finalValues;
 
   }
@@ -499,7 +503,7 @@ public class SysAidConnector {
   public static void main(String args[]) {
 
     try {
-      SysAidConnector sysaid = new SysAidConnector();
+      SysAidConnector sysaid = new SysAidConnector("configuration.properties");
       sysaid.getAllList();
       // sysaid.createServiceRequest();
     } catch (SysAidLoginException e) {

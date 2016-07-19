@@ -1,6 +1,5 @@
 package edu.umd.lib.process;
 
-
 import java.util.HashMap;
 
 import org.apache.camel.Exchange;
@@ -8,6 +7,7 @@ import org.apache.camel.Processor;
 import org.apache.log4j.Logger;
 
 import edu.umd.lib.services.SysAidConnector;
+import edu.umd.lib.services.SysAidUsers;
 
 /**
  * SysAidProcessor connects to SysAid using Login credentials from Configuration
@@ -15,21 +15,24 @@ import edu.umd.lib.services.SysAidConnector;
  * configuration file to map to SysAid field and then processed to create a
  * service request
  * <p>
+ *
  * @since 1.0
  */
 public class SysAidProcessor implements Processor {
-	
-    private static Logger log = Logger.getLogger(SysAidProcessor.class);
 
- 
+  private static Logger log = Logger.getLogger(SysAidProcessor.class);
+
   @SuppressWarnings("unchecked")
   @Override
   public void process(Exchange exchange) throws Exception {
 
-	  log.info("Processing a request to SysAid");
-	  HashMap<String, String> message = exchange.getIn().getBody(HashMap.class);
-	  SysAidConnector sysaid = new SysAidConnector();
-	  sysaid.createServiceRequest(message);
+    log.info("Processing a request to SysAid");
+    HashMap<String, String> message = exchange.getIn().getBody(HashMap.class);
+    SysAidConnector sysaid = new SysAidConnector("configuration.properties");
+    sysaid.createServiceRequest(message, "Wufoo-Sysaid-Mapping.properties");
+
+    SysAidUsers allUsers = SysAidUsers.getInstance();
+    allUsers.getUserbyKey("email_address", "gpark@umd.edu");
   }
 
 }
