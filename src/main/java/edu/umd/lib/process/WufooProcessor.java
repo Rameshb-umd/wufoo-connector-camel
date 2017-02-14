@@ -20,6 +20,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import edu.umd.lib.exception.CamelHandShakeException;
+
 /**
  * WufooProcessor process the request from WuFoo by parsing the request then
  * creating a Hash map of fields and values from the form. The map is then
@@ -42,8 +44,9 @@ public class WufooProcessor implements Processor {
    * Load the configuration file while creating the object and populate the
    * handshake key from the properties file
    */
-  public WufooProcessor() {
-    this.loadConfiguration("configuration.properties");
+  public WufooProcessor(String handshakeKey) {
+    this.handShakeKey = handshakeKey;
+    log.info("Setting handshake key: " + this.handShakeKey);
   }
 
   /***
@@ -58,18 +61,33 @@ public class WufooProcessor implements Processor {
   public void process(Exchange exchange) throws Exception {
 
     String message = exchange.getIn().getBody(String.class);
-    Map<String, List<String>> parameters = getQueryParams(message);
 
+    Map<String, List<String>> parameters = getQueryParams(message);
     checkHandshake(parameters);
+    String formName = getHashvalue(parameters.get("FormStructure"));
     Map<String, String> fields = getFields(parameters);
     JSONArray fieldsList = getFieldStructure(parameters.get("FieldStructure"), fields);
     HashMap<String, String> values = extractParameters(fieldsList);
-
+    values.put("Hash", formName);
     exchange.getOut().setBody(values);
-    log.info("Total Number of Parameters from the request:" + parameters.size());
 
-    // SysAidConnector sysaid = new SysAidConnector();
-    // sysaid.createServiceRequest(values);
+  }
+
+  /****
+   * Get Form Name from the Wufoo Request
+   *
+   * @param formStructureArray
+   * @return
+   */
+  public String getHashvalue(List<String> formStructureArray) {
+    try {
+      JSONObject formStructure = new JSONObject(formStructureArray.get(0).toString());
+      return formStructure.getString("Hash");
+    } catch (JSONException e) {
+      log.error("JSONException occured while extracting form Hash value from Form Structure " +
+          ".", e);
+    }
+    return "";
   }
 
   /***
@@ -103,6 +121,8 @@ public class WufooProcessor implements Processor {
       return params;
 
     } catch (UnsupportedEncodingException ex) {
+      log.error("UnsupportedEncodingException occured while parsing query parameters " +
+          ".", ex);
       throw new AssertionError(ex);
     }
   }
@@ -118,14 +138,14 @@ public class WufooProcessor implements Processor {
   public void checkHandshake(Map<String, List<String>> parameters) throws CamelHandShakeException {
 
     String handshake = parameters.get("HandshakeKey").get(0);
-    log.info("Wufoo handshake:" + handshake);
-    log.info("camel handshake:" + handShakeKey);
     if (handshake == null) {
       throw new CamelHandShakeException("Wufoo Handshake key is empty.");
     } else if (this.handShakeKey == null) {
       throw new CamelHandShakeException("Camel Handshake key is empty.");
     } else if (!this.handShakeKey.equalsIgnoreCase(handshake)) {
       throw new CamelHandShakeException("Camel Handshake key and Wufoo Handshake key does not match.");
+    } else {
+      log.info("Wufoo handshake and Camel HandShake Key Matches");
     }
 
   }
@@ -182,6 +202,9 @@ public class WufooProcessor implements Processor {
           } else {
             combined_value = combined_value + " " + fields.get(subfield.getString("ID"));
           }
+          subfield.put("Value", fields.get(field.get("ID")));
+          subfield.put("Title", subfield.get("Label"));
+          fieldsList.put(subfield);
         }
         field.put("Value", combined_value);
       } else {
@@ -234,7 +257,7 @@ public class WufooProcessor implements Processor {
       }
     } catch (JSONException e) {
       log.error("JSONException occured while attempting to "
-          + "execute POST request.", e);
+          + "Extract parameters from JSONArray.", e);
     }
     return paramaters;
   }
@@ -256,24 +279,8 @@ public class WufooProcessor implements Processor {
       this.handShakeKey = properties.getProperty("wufoo.handshake_key");
 
     } catch (IOException e) {
-      log.error("IOException occured while attempting to "
-          + "execute POST request. Authentication Failed ", e);
-    }
-  }
-
-  /***
-   * Custom Exception to check if the request is valid request from WuFoo
-   */
-  class CamelHandShakeException extends Exception {
-
-    private static final long serialVersionUID = 1L;
-
-    public CamelHandShakeException() {
-    }
-
-    // Constructor that accepts a message
-    public CamelHandShakeException(String message) {
-      super(message);
+      log.error("IOException occured while accessing the configuration file " +
+          resourceName + ".", e);
     }
   }
 
